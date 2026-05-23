@@ -4,15 +4,15 @@ If you like this project, consider supporting me:
 
 [![PayPal](https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg)](https://paypal.me/zakriamansoor)
 
+
 <h1 align="center">SLAYER_SpawnDuplicator</h1>
 
 <p align="center">
   <a href="https://github.com/zakriamansoor47/SLAYER_SpawnDuplicator/releases">
-    <img src="https://img.shields.io/github/downloads/zakriamansoor47/SLAYER_SpawnDuplicator/total?style=for-the-badge" />
+    <img src="https://img.shields.io/github/downloads/zakriamansoor47/SLAYER_SpawnDuplicator/total"/>
   </a>
-
   <a href="https://github.com/zakriamansoor47/SLAYER_SpawnDuplicator">
-    <img src="https://visitor-badge.laobi.icu/badge?page_id=zakriamansoor47.SLAYER_SpawnDuplicator&left_text=views" />
+    <img src="https://visitor-badge.laobi.icu/badge?page_id=zakriamansoor47.SLAYER_SpawnDuplicator&left_text=views"/>
   </a>
 </p>
 
