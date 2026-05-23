@@ -13,6 +13,8 @@ public class SLAYER_SpawnDuplicatorConfig : BasePluginConfig
         ["de_nuke"] = new SpawnDuplicatorSettings()
         {
             TotalSpawns = 32,
+            MoveOriginalSpawns = false,
+            UseTeleportOnSpawn = false,
             TSpawnXOffset = 50.0f,
             TSpawnYOffset = 20.0f,
             TSpawnZOffset = 0.0f,
@@ -28,6 +30,8 @@ public class SLAYER_SpawnDuplicatorConfig : BasePluginConfig
         ["de_inferno"] = new SpawnDuplicatorSettings()
         {
             TotalSpawns = 32,
+            MoveOriginalSpawns = false,
+            UseTeleportOnSpawn = false,
             TSpawnXOffset = 0.0f,
             TSpawnYOffset = 0.0f,
             TSpawnZOffset = 0.0f,
@@ -43,6 +47,8 @@ public class SLAYER_SpawnDuplicatorConfig : BasePluginConfig
         ["de_ancient"] = new SpawnDuplicatorSettings()
         {
             TotalSpawns = 32,
+            MoveOriginalSpawns = false,
+            UseTeleportOnSpawn = false,
             TSpawnXOffset = 0.0f,
             TSpawnYOffset = 0.0f,
             TSpawnZOffset = 0.0f,
@@ -60,6 +66,8 @@ public class SLAYER_SpawnDuplicatorConfig : BasePluginConfig
 public class SpawnDuplicatorSettings
 {
     [JsonPropertyName("TotalSpawns")] public int TotalSpawns { get; set; } = 32; // Total number of spawns per team (including original spawns). The plugin will try to create as many extra spawns as possible up to this limit, while maintaining reasonable spacing between them. Setting this to a very high number may result in fewer spawns being created if there are not enough valid locations to place them without being too close to each other.
+    [JsonPropertyName("MoveOriginalSpawns")] public bool MoveOriginalSpawns { get; set; } = false; // If true, original map spawn entities are repositioned to the computed spawn list so players can spawn directly on them without post-spawn teleport.
+    [JsonPropertyName("UseTeleportOnSpawn")] public bool UseTeleportOnSpawn { get; set; } = false; // If true, players are teleported after spawn to enforce the spawn list. Set false to rely on spawn entities only.
     [JsonPropertyName("TSpawnXOffset")] public float TSpawnXOffset { get; set; } = 0.0f; // X offset applied to all Terrorist spawns (original and duplicated). This can be used to shift all T spawns in a certain X direction
     [JsonPropertyName("TSpawnYOffset")] public float TSpawnYOffset { get; set; } = 0.0f; // Y offset applied to all Terrorist spawns (original and duplicated). This can be used to shift all T spawns in a certain Y direction
     [JsonPropertyName("TSpawnZOffset")] public float TSpawnZOffset { get; set; } = 0.0f; // Z offset applied to all Terrorist spawns (original and duplicated). This can be used to shift all T spawns in a certain Z direction
@@ -108,11 +116,11 @@ public class SpawnDuplicator : BasePlugin, IPluginConfig<SLAYER_SpawnDuplicatorC
 
         RegisterEventHandler<EventPlayerSpawn>((@event, @info) =>
         {
+            if (!ActiveSettings.UseTeleportOnSpawn) return HookResult.Continue;
             if (SpawnsPositions.Count == 0) return HookResult.Continue; // If there are no duplicated spawns, we don't need to do anything, so we just continue with the normal spawn process.
 
             var player = @event.Userid;
             if (player == null || !player.IsValid || player.PlayerPawn.Value == null) return HookResult.Continue;
-
             if (player.TeamNum == 2) // If the player is on the T team and we have duplicated T spawns, we teleport the player to one of the duplicated T spawns based on the current index, and then increment the index for the next player. We use modulo operator to loop back to the start of the spawn list if we exceed it, which allows us to reuse the same spawns for multiple players if there are more players than spawns.
             {
                 QueueSpawnTeleport(player, "info_player_terrorist", true);
@@ -121,7 +129,6 @@ public class SpawnDuplicator : BasePlugin, IPluginConfig<SLAYER_SpawnDuplicatorC
             {
                 QueueSpawnTeleport(player, "info_player_counterterrorist", false);
             }
-
 
             return HookResult.Continue;
         });
@@ -159,7 +166,7 @@ public class SpawnDuplicator : BasePlugin, IPluginConfig<SLAYER_SpawnDuplicatorC
 
                     if (player.TeamNum == 2)
                     {
-                        player.SwitchTeam(CsTeam.CounterTerrorist);
+                        //player.SwitchTeam(CsTeam.CounterTerrorist);
                         Server.NextFrame(() =>
                         {
                             player.CommitSuicide(false, true); // Slaying is necessary to make all bots spawn on the new spawn points
@@ -167,7 +174,7 @@ public class SpawnDuplicator : BasePlugin, IPluginConfig<SLAYER_SpawnDuplicatorC
                     }
                     else if (player.TeamNum == 3)
                     {
-                        player.SwitchTeam(CsTeam.Terrorist);
+                        //player.SwitchTeam(CsTeam.Terrorist);
                         Server.NextFrame(() =>
                         {
                             player.CommitSuicide(false, true); // Slaying is necessary to make all bots spawn on the new spawn points
@@ -181,7 +188,6 @@ public class SpawnDuplicator : BasePlugin, IPluginConfig<SLAYER_SpawnDuplicatorC
                     {
                         if(GetGameRules() != null) GetGameRules().TerminateRound(1f, RoundEndReason.Unknown);
                     });
-
                 }
             });
 
@@ -319,14 +325,16 @@ public class SpawnDuplicator : BasePlugin, IPluginConfig<SLAYER_SpawnDuplicatorC
     
     private void DuplicateSpawnsForTeam(string className)
     {
-        var originals = Utilities.FindAllEntitiesByDesignerName<CBaseEntity>(className);
-        if (!originals.Any()) return;
+        var originalEntities = Utilities.FindAllEntitiesByDesignerName<CBaseEntity>(className)
+            .Where(entity => entity != null && entity.IsValid)
+            .ToList();
+        if (originalEntities.Count == 0) return;
 
         int copiesCreated = 0;
         List<(Vector, QAngle)> allOriginalPositions = new List<(Vector, QAngle)>();
 
         // Store original positions and angles of the spawns
-        foreach (var original in originals)
+        foreach (var original in originalEntities)
         {
             if (!original.IsValid) continue;
 
@@ -390,6 +398,11 @@ public class SpawnDuplicator : BasePlugin, IPluginConfig<SLAYER_SpawnDuplicatorC
         int baseSpawnCount = SpawnsPositions[className].Count;
         if (baseSpawnCount == 0) return;
 
+        if (ActiveSettings.MoveOriginalSpawns)
+        {
+            MoveOriginalSpawnEntities(originalEntities, SpawnsPositions[className], baseSpawnCount);
+        }
+
         int extraCopies = Math.Clamp(ActiveSettings.TotalSpawns - baseSpawnCount, 0, 64); // Calculate how many extra copies we need to create based on the total spawns specified in the config, clamped to a maximum of 64 (since that's the max number of spawns that can be active at once in CS2).
         if (extraCopies <= 0)
         {
@@ -433,6 +446,31 @@ public class SpawnDuplicator : BasePlugin, IPluginConfig<SLAYER_SpawnDuplicatorC
         else
         {
             Console.WriteLine($"[SLAYER SpawnDuplicator] Created {copiesCreated} extra {className} spawns. Base {baseSpawnCount}");
+        }
+    }
+    private void MoveOriginalSpawnEntities(List<CBaseEntity> originalEntities, List<(Vector, QAngle)> targetSpawns, int targetCount)
+    {
+        int moveCount = Math.Min(originalEntities.Count, targetCount);
+        if (moveCount <= 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < moveCount; i++)
+        {
+            var entity = originalEntities[i];
+            if (entity == null || !entity.IsValid)
+            {
+                continue;
+            }
+
+            var (pos, ang) = targetSpawns[i];
+            if (!IsFiniteVector(pos) || !IsFiniteQAngle(ang))
+            {
+                continue;
+            }
+
+            entity.Teleport(pos, ang, Vector.Zero);
         }
     }
     private List<(Vector, QAngle)> BuildSegmentCandidates(List<(Vector, QAngle)> orderedSpawns, int extraCopies)
