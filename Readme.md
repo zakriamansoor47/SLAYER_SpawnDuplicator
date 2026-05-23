@@ -7,7 +7,10 @@ If you like this project, consider supporting me:
 
 <h1 align="center">SLAYER_SpawnDuplicator</h1>
 
-<p align="center"><a href="https://github.com/zakriamansoor47/SLAYER_SpawnDuplicator/releases"><img src="https://img.shields.io/github/downloads/zakriamansoor47/SLAYER_SpawnDuplicator/total"/></a><a href="https://github.com/zakriamansoor47/SLAYER_SpawnDuplicator"><img src="https://visitor-badge.laobi.icu/badge?page_id=zakriamansoor47.SLAYER_SpawnDuplicator&left_text=views"/></a></p>
+<p align="center">
+<a href="https://github.com/zakriamansoor47/SLAYER_SpawnDuplicator/releases"><img src="https://img.shields.io/github/downloads/zakriamansoor47/SLAYER_SpawnDuplicator/total"/></a>
+<a href="https://github.com/zakriamansoor47/SLAYER_SpawnDuplicator"><img src="https://visitor-badge.laobi.icu/badge?page_id=zakriamansoor47.SLAYER_SpawnDuplicator&left_text=views"/></a>
+</p>
 
 CS2 CounterStrikeSharp plugin that expands team spawn capacity by generating extra spawn entities and teleporting players to those points on spawn.
 
